@@ -3,94 +3,91 @@ import pickle
 import numpy as np
 import time
 
-# Optional celebration effect (falls back gracefully if not installed)
-try:
-    from streamlit_confetti import confetti
-    HAS_CONFETTI = True
-except ImportError:
-    HAS_CONFETTI = False
-
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="Academic Performance Predictor",
     page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# --- CUSTOM CSS & ANIMATIONS ---
+# --- CUSTOM CSS WITH SHADOWS & VERTICAL CARD DESIGN ---
 st.markdown("""
     <style>
-    /* Main Background & Font Styling */
+    /* Main Background */
     .stApp {
-        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
         color: #f8fafc;
     }
     
-    /* Card Container Styling */
+    /* Elevated Card Style with Shadows */
     .css-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
+        background: #1e293b;
         border-radius: 16px;
-        padding: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        margin-bottom: 20px;
+        padding: 28px;
+        border: 1px solid #334155;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        margin-bottom: 24px;
     }
 
-    /* Custom Header */
+    /* Main Header */
     .main-title {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
         font-weight: 800;
+        text-align: center;
         background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
+        margin-bottom: 8px;
     }
     
     .subtitle {
         color: #94a3b8;
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
+        font-size: 1rem;
+        text-align: center;
+        margin-bottom: 24px;
     }
 
-    /* Custom Input Labels */
-    label {
-        color: #cbd5e1 !important;
-        font-weight: 600 !important;
+    /* Input Fields Styling */
+    .stNumberInput div[data-baseweb="input"] {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+        border-radius: 8px;
     }
 
-    /* Predict Button Styling & Pulse Animation */
+    /* Predict Button Styling */
     div.stButton > button:first-child {
         width: 100%;
-        background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
-        color: white;
+        background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+        color: #ffffff;
         border: none;
-        padding: 14px 28px;
+        padding: 16px 28px;
         font-size: 1.1rem;
         font-weight: 700;
         border-radius: 12px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.5);
     }
     
     div.stButton > button:first-child:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
-        background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
+        box-shadow: 0 6px 20px 0 rgba(124, 58, 237, 0.6);
+        background: linear-gradient(90deg, #4338ca 0%, #6d28d9 100%);
     }
 
-    /* Success Metric Card */
-    .metric-card {
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.3);
+    /* Output Results Box */
+    .result-card {
+        background: #064e3b;
+        border: 1px solid #10b981;
         border-radius: 12px;
         padding: 20px;
         text-align: center;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
     
-    .metric-value {
+    .result-value {
         font-size: 2rem;
         font-weight: 800;
         color: #34d399;
@@ -98,96 +95,67 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- LOAD PICKLE MODEL ---
+# --- MODEL LOADING ---
 @st.cache_resource
 def load_model():
     with open('model.pkl', 'rb') as file:
-        model = pickle.load(file)
-    return model
+        return pickle.load(file)
 
 try:
     model = load_model()
 except Exception as e:
-    st.error(f"Error loading `model.pkl`: {e}")
+    st.error(f"Error loading model file (`model.pkl`): {e}")
     st.stop()
 
-# --- APP HEADER ---
+# --- HEADER SECTION ---
 st.markdown('<div class="main-title">🎓 Student Performance Predictor</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Enter subject marks below to evaluate predicted outcome via KNN Model</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Enter subject marks below to generate model prediction</div>', unsafe_allow_html=True)
 
-# --- INPUT FORM AREA ---
+# --- VERTICAL FORM SECTION ---
 st.markdown('<div class="css-card">', unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
+hindi = st.number_input("📚 Hindi", min_value=0, max_value=100, value=75, step=1)
+english = st.number_input("📖 English", min_value=0, max_value=100, value=80, step=1)
+science = st.number_input("🔬 Science", min_value=0, max_value=100, value=70, step=1)
+maths = st.number_input("📐 Maths", min_value=0, max_value=100, value=85, step=1)
+history = st.number_input("🏛️ History", min_value=0, max_value=100, value=65, step=1)
+geography = st.number_input("🌍 Geography", min_value=0, max_value=100, value=72, step=1)
 
-with col1:
-    hindi = st.number_input("📚 Hindi", min_value=0, max_value=100, value=75, step=1)
-    english = st.number_input("📖 English", min_value=0, max_value=100, value=80, step=1)
-    science = st.number_input("🔬 Science", min_value=0, max_value=100, value=70, step=1)
-    maths = st.number_input("📐 Maths", min_value=0, max_value=100, value=85, step=1)
-
-with col2:
-    history = st.number_input("🏛️ History", min_value=0, max_value=100, value=65, step=1)
-    geography = st.number_input("🌍 Geography", min_value=0, max_value=100, value=72, step=1)
-    
-    # Calculate Total automatically
-    total_calculated = hindi + english + science + maths + history + geography
-    st.text_input("📊 Total Marks (Auto-calculated)", value=str(total_calculated), disabled=True)
+# Auto-calculate total
+total_calculated = hindi + english + science + maths + history + geography
+st.text_input("📊 Total Marks (Auto-calculated)", value=f"{total_calculated} / 600", disabled=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- PREDICTION & EFFECTS ---
-st.markdown("<br>", unsafe_allow_html=True)
-predict_btn = st.button("🚀 Predict Outcome")
-
-if predict_btn:
-    # Trigger native snow/balloons visual effects
+# --- ACTION & PREDICTION SECTION ---
+if st.button("🚀 Predict Outcome"):
     st.balloons()
-    if HAS_CONFETTI:
-        confetti()
 
-    # Progress bar effect
-    with st.spinner("Analyzing input features..."):
+    with st.spinner("Processing prediction..."):
         progress_bar = st.progress(0)
         for i in range(100):
-            time.sleep(0.005)
+            time.sleep(0.003)
             progress_bar.progress(i + 1)
-        
-        # Prepare feature vector matching model's expected 7 features
-        # Features: ['Hindi', 'English', 'Science', 'Maths', 'History', 'Geography', 'Total']
+
+        # Build feature vector: ['Hindi', 'English', 'Science', 'Maths', 'History', 'Geography', 'Total']
         features = np.array([[hindi, english, science, maths, history, geography, total_calculated]])
-        
         prediction = model.predict(features)[0]
-        
-        # Display probabilities if available
+
         proba = None
         if hasattr(model, "predict_proba"):
             proba = model.predict_proba(features)[0]
 
-    # Display Results
-    st.markdown("<br>", unsafe_allow_html=True)
+    # Display Result Card
     st.markdown('<div class="css-card">', unsafe_allow_html=True)
-    
-    res_col1, res_col2 = st.columns([1, 1])
-    
-    with res_col1:
-        st.markdown(f"""
-            <div class="metric-card">
-                <div style="color: #94a3b8; font-size: 0.9rem;">PREDICTED CLASS</div>
-                <div class="metric-value">{prediction}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    with res_col2:
-        st.markdown(f"""
-            <div class="metric-card" style="border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.1);">
-                <div style="color: #94a3b8; font-size: 0.9rem;">TOTAL MARKS</div>
-                <div class="metric-value" style="color: #818cf8;">{total_calculated} / 600</div>
-            </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"""
+        <div class="result-card">
+            <div style="color: #a7f3d0; font-size: 0.9rem; font-weight: 600;">PREDICTED OUTCOME</div>
+            <div class="result-value">{prediction}</div>
+        </div>
+    """, unsafe_allow_html=True)
 
     if proba is not None:
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.write("")
         st.write("**Prediction Confidence:**")
         classes = model.classes_
         for cls, p in zip(classes, proba):
